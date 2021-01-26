@@ -7,6 +7,8 @@ const fileupload = require('express-fileupload')
 const expressSession = require('express-session')
 const MongoStore = require('connect-mongo')
 const connectFlash = require('connect-flash')
+const {stripTags} = require('./helpers/hbs')
+
 
 //controller
 //article
@@ -21,7 +23,7 @@ const userCreate = require('./controllers/userCreate')
 const userRegister = require('./controllers/userRegister')
 const userLogin = require('./controllers/userLogin')
 const userLoginAuth = require('./controllers/userLoginAuth')
-
+const userLogout = require('./controllers/userLogout')
 
 //mongodb
 const app = express()
@@ -65,7 +67,11 @@ app.use(express.static('public'))
 
 
 //Route
-app.engine('hbs', exphbs({defaultLayout: 'main',extname: 'hbs',handlebars: allowInsecurePrototypeAccess(Handlebars)}))
+app.engine('hbs', exphbs({
+    helpers: {
+    stripTags: stripTags
+    },
+    defaultLayout: 'main',extname: 'hbs',handlebars: allowInsecurePrototypeAccess(Handlebars)}))
 app.set('view engine','hbs')
 app.use('*', (req,res,next) =>{
     res.locals.user = req.session.userId
@@ -86,15 +92,20 @@ app.post('/articles/post', auth, articleValidPost, articlePostController )
 
 //users
 app.get('/user/create', redirectAuthSuccess, userCreate )
-app.post('/user/register', userRegister)
+app.post('/user/register',redirectAuthSuccess, userRegister)
 app.get('/user/login', redirectAuthSuccess, userLogin)
-app.post('/user/loginAuth',userLoginAuth)
-app.get('/user/logout', redirectAuthSuccess, userLogout)
+app.post('/user/loginAuth', redirectAuthSuccess,userLoginAuth)
+app.get('/user/logout',  userLogout)
 
 //contact 
 app.get('/contact', (req,res)=>{
     res.render('contact')
 })    
+
+//error404
+app.use((req,res)=>{
+    res.render('error404')
+})
 
 app.listen(3000, ()=>{
     console.log('Open server 3000');
